@@ -1,5 +1,5 @@
 import {ReelAudio} from './audio.mjs?v=20261013-7';
-import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261013-5';
+import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261013-9';
 
 const icons={
   spark:'<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>',
@@ -11,6 +11,8 @@ const icons={
   flag:'<path d="M5 21V4m0 0c5-4 9 4 14 0v10c-5 4-9-4-14 0"/>',
   sound:'<path d="m11 4-5 4H3v8h3l5 4V4Zm5 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
   mute:'<path d="m11 4-5 4H3v8h3l5 4V4Zm6 5 5 6m0-6-5 6"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 12a2 2 0 0 0 4 0"/>',
+  bellOff:'<path d="m3 3 18 18M6.5 6.5A6 6 0 0 0 6 8c0 7-3 7-3 9h14M10 2.3A6 6 0 0 1 18 8c0 2.2.3 3.7.8 4.8M10 20a2 2 0 0 0 4 0"/>',
   dice:'<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01" stroke-width="3"/>',
   arrow:'<path d="M4 12h16m-6-6 6 6-6 6"/>',
   crown:'<path d="m3 6 4 4 5-6 5 6 4-4-2 12H5L3 6Zm3 15h12"/>',
@@ -39,8 +41,8 @@ const demoPlate={letters:['А','А','А'],digits:'777',region:'777',rarity:'lege
 const routes=[{id:'roll',label:'Выбить номер',short:'Выбить',icon:'spark'},{id:'garage',label:'Мой гараж',short:'Гараж',icon:'grid'},{id:'market',label:'Авторынок',short:'Рынок',icon:'bag'},{id:'achievements',label:'Достижения',short:'Награды',icon:'trophy'}];
 
 function save(){try{saveState(storage,state);}catch{if(!saveWarning){toast('Браузер не разрешил сохранение. Прогресс доступен до закрытия страницы.','error');saveWarning=true;}}updateHeader();}
-function toast(message,type='success'){const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`${icon(type==='error'?'help':'check')}<span>${esc(message)}</span>`;$('#toasts').append(el);while($('#toasts').children.length>3)$('#toasts').firstElementChild.remove();setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),250);},4500);}
-function updateHeader(){const balance=$('#balance');balance.innerHTML=`${money(state.balance)} <span>₽</span>`;$('#sound-button').innerHTML=icon(state.sound?'sound':'mute');$('#sound-button').setAttribute('aria-label',state.sound?'Выключить звук':'Включить звук');$('#sound-button').title=state.sound?'Выключить звук':'Включить звук';$('#mission-progress').style.width=`${Math.min(state.spins/5,1)*100}%`;$('#mission-count').textContent=`${Math.min(state.spins,5)} из 5 номеров`;const claim=$('#mission-claim');claim.disabled=state.spins<5||state.claimed.includes('five');claim.textContent=state.claimed.includes('five')?'Получено ✓':'Забрать ↗';$('#wallet-bonus').classList.toggle('available',state.lastDaily!==localDay());}
+function toast(message,type='success'){if(!state.notifications)return;const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`${icon(type==='error'?'help':'check')}<span>${esc(message)}</span>`;$('#toasts').append(el);while($('#toasts').children.length>3)$('#toasts').firstElementChild.remove();setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),250);},4500);}
+function updateHeader(){const balance=$('#balance');balance.innerHTML=`${money(state.balance)} <span>₽</span>`;$('#sound-button').innerHTML=icon(state.sound?'sound':'mute');$('#sound-button').setAttribute('aria-label',state.sound?'Выключить звук':'Включить звук');$('#sound-button').title=state.sound?'Выключить звук':'Включить звук';const notifications=$('#notifications-button');notifications.innerHTML=icon(state.notifications?'bell':'bellOff');notifications.setAttribute('aria-pressed',String(state.notifications));notifications.title=state.notifications?'Отключить уведомления':'Включить уведомления';$('#mission-progress').style.width=`${Math.min(state.spins/5,1)*100}%`;$('#mission-count').textContent=`${Math.min(state.spins,5)} из 5 номеров`;const claim=$('#mission-claim');claim.disabled=state.spins<5||state.claimed.includes('five');claim.textContent=state.claimed.includes('five')?'Получено ✓':'Забрать ↗';$('#wallet-bonus').classList.toggle('available',state.lastDaily!==localDay());}
 function nav(){routes.forEach(r=>{const count=r.id==='garage'?`<span class="nav-count">${state.collection.length}</span>`:'';const active=r.id===page;$('#desktop-nav').insertAdjacentHTML('beforeend',`<a href="#${r.id}" class="nav-link ${active?'active':''}" ${active?'aria-current="page"':''}>${icon(r.icon)}<span>${r.label}</span>${count}${active?'<span class="nav-active-dot"></span>':''}</a>`);$('#mobile-nav').insertAdjacentHTML('beforeend',`<a href="#${r.id}" class="mobile-nav-link ${active?'active':''}" ${active?'aria-current="page"':''}>${icon(r.icon)}<span>${r.short}</span></a>`);});}
 function rarity(p){return `<span class="rarity" style="--rarity:${RARITIES[p.rarity].color}"><i></i>${RARITIES[p.rarity].label}</span>`;}
 function plate(p,extra=''){
@@ -138,6 +140,7 @@ document.addEventListener('click',e=>{const quick=e.target.closest('[data-quick-
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal();});
 $('#help-button').addEventListener('click',showHelp);$('#footer-help').addEventListener('click',showHelp);$('#profile-button').addEventListener('click',showProfile);$('#wallet-bonus').addEventListener('click',daily);$('#mission-claim').addEventListener('click',()=>claim('five'));
 $('#sound-button').addEventListener('click',()=>{state.sound=!state.sound;reelAudio.setEnabled(state.sound);save();if(state.sound)playTone(500,.1);});
+$('#notifications-button').addEventListener('click',()=>{state.notifications=!state.notifications;$('#toasts').replaceChildren();save();if(state.notifications)toast('Уведомления включены');});
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&page==='roll'&&!spinning&&!$('#modal').open&&['BODY','MAIN'].includes(document.activeElement.tagName)){e.preventDefault();spin();}});
 window.addEventListener('hashchange',()=>{const next=location.hash.slice(1);if(spinning){history.replaceState(null,'',`#${page}`);toast('Ещё мгновение — номер останавливается','error');return;}page=routes.some(r=>r.id===next)?next:'roll';search='';filter='all';sort='new';render();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});});
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));$('#year').textContent=new Date().getFullYear();page=routes.some(r=>r.id===location.hash.slice(1))?location.hash.slice(1):'roll';render();

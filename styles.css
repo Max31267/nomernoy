@@ -359,3 +359,12 @@ body{font-size:16px;line-height:1.5}
  .spin-stage .plate-meta .rarity{font-size:16px}
  .spin-stage .plate-meta>span.plate-location{font-size:16px;flex-basis:100%;text-align:left}
 }
+
+.header-toggles{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.header-toggles>.icon-button{flex-shrink:0}
+.notifications-button .icon{width:18px;height:18px}
+.notifications-button[aria-pressed="true"]{color:var(--lime)}
+@media(max-width:760px){
+ .notifications-button{width:26px;height:30px}
+ .notifications-button .icon{width:17px;height:17px}
+}

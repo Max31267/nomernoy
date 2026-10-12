@@ -57,7 +57,7 @@ export function generatePlate(caseId='standard',rng=random) {
 export function makeId(){return globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 export function plateText(p){return `${p.letters[0]} ${p.digits} ${p.letters[1]}${p.letters[2]} ${p.region}`;}
 export function starterState(){
-  return {version:1,balance:150000,spins:0,sold:0,bought:0,epics:0,legends:0,earned:0,best:null,lastDaily:null,claimed:[],purchased:[],history:[],sound:false,
+  return {version:1,balance:150000,spins:0,sold:0,bought:0,epics:0,legends:0,earned:0,best:null,lastDaily:null,claimed:[],purchased:[],history:[],sound:false,notifications:true,
     collection:[
       {id:'starter-1',letters:['К','М','Р'],digits:'404',region:'77',rarity:'uncommon',value:4200,tags:['Зеркальный номер'],createdAt:1,favorite:false,source:'gift'},
       {id:'starter-2',letters:['А','В','К'],digits:'777',region:'24',rarity:'rare',value:28000,tags:['Три одинаковые цифры'],createdAt:2,favorite:false,source:'gift'},
@@ -95,6 +95,7 @@ export function loadState(storage){
   const raw=readSave(storage,SAVE_KEY)||readSave(storage,BACKUP_KEY);
   if(!raw)return starterState();
   const s={...starterState(),...raw};
+  s.notifications=s.notifications!==false;
   for(const k of ['spins','sold','bought','epics','legends','earned'])if(!Number.isFinite(s[k])||s[k]<0)s[k]=0;
   for(const k of ['claimed','purchased','history'])if(!Array.isArray(s[k]))s[k]=[];
   s.history=s.history.filter(validPlate).slice(0,20);
