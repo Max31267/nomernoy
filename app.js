@@ -1,4 +1,4 @@
-import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState} from './game.mjs?v=20261013-3';
+import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState} from './game.mjs?v=20261013-4';
 
 const icons={
   spark:'<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>',

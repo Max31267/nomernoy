@@ -1,21 +1,6 @@
+import {REGIONS} from './regions.mjs?v=20261013-4';
+export {REGIONS,REGION_NAMES,regionName} from './regions.mjs?v=20261013-4';
 export const LETTERS = 'АВЕКМНОРСТУХ';
-export const REGIONS = ['77','97','99','177','197','199','777','50','150','750','78','98','178','198','24','124','61','161','23','123','16','116','54','154','66','196','72','86','05','95'];
-export const REGION_NAMES = Object.freeze(Object.fromEntries([
-  ['Москва', ['77','97','99','177','197','199','777']],
-  ['Московская область', ['50','150','750']],
-  ['Санкт-Петербург', ['78','98','178','198']],
-  ['Красноярский край', ['24','124']],
-  ['Ростовская область', ['61','161']],
-  ['Краснодарский край', ['23','123']],
-  ['Республика Татарстан', ['16','116']],
-  ['Новосибирская область', ['54','154']],
-  ['Свердловская область', ['66','196']],
-  ['Тюменская область', ['72']],
-  ['Ханты-Мансийский автономный округ — Югра', ['86']],
-  ['Республика Дагестан', ['05']],
-  ['Чеченская Республика', ['95']]
-].flatMap(([name,codes])=>codes.map(code=>[code,name]))));
-export function regionName(code){return REGION_NAMES[String(code).padStart(2,'0')]||'Регион';}
 export const RARITIES = {
   common: {label:'Обычный',color:'#acb1a7',rank:0},
   uncommon: {label:'Необычный',color:'#a5d890',rank:1},
@@ -45,7 +30,7 @@ export function generatePlate(caseId='standard',rng=random) {
   const keys=Object.keys(RARITIES);
   for(let i=0;i<keys.length;i++){threshold-=box.weights[i];if(threshold<0){rarity=keys[i];break;}}
   const letter=()=>pick(LETTERS,rng);const digit=()=>String(Math.floor(rng()*10));
-  let letters=[letter(),letter(),letter()];let digits;let tags=[];let region=pick(REGIONS,rng);
+  let letters=[letter(),letter(),letter()];let digits;let tags=[];const region=pick(REGIONS,rng);
   if(rarity==='common'){
     do {digits=String(1+Math.floor(rng()*999)).padStart(3,'0');} while(digits[0]===digits[2]||digits.endsWith('00')||['123','234','345','456','567','678','789'].includes(digits));
     if(letters[0]===letters[1]&&letters[1]===letters[2]) letters[2]=LETTERS[(LETTERS.indexOf(letters[2])+1)%LETTERS.length];
@@ -60,7 +45,7 @@ export function generatePlate(caseId='standard',rng=random) {
   }else if(rarity==='epic'){
     digits=pick(['007','001','100','500','700','900','010'],rng);letters=[letters[0],letters[0],letters[0]];tags=['Три одинаковые буквы',digits.endsWith('00')?'Круглый номер':'Особая серия'];
   }else{
-    digits=pick(['111','555','777','888','999'],rng);letters=[letters[0],letters[0],letters[0]];region=pick(['77','777','99','197','97','24','61'],rng);tags=['Три одинаковые буквы','Три одинаковые цифры','Коллекционная серия'];
+    digits=pick(['111','555','777','888','999'],rng);letters=[letters[0],letters[0],letters[0]];tags=['Три одинаковые буквы','Три одинаковые цифры','Коллекционная серия'];
   }
   const ranges={common:[600,1800],uncommon:[2500,7000],rare:[14000,42000],epic:[100000,380000],legendary:[950000,4200000]};
   const [min,max]=ranges[rarity];let value=Math.round((min+rng()*(max-min))/100)*100;
