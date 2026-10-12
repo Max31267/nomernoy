@@ -314,3 +314,14 @@ body{font-size:16px;line-height:1.5}
  .odds-list b{font-size:13px;min-width:42px}
  .profile-stats>div{padding:14px}
 }
+
+/* The drop's rarity and named registration region. */
+.spin-stage .plate-meta{align-items:baseline;gap:9px 20px}
+.spin-stage .plate-meta .rarity{font-size:17px;font-weight:700;line-height:1.55}
+.spin-stage .plate-meta .rarity i{width:5px;height:5px}
+.spin-stage .plate-meta>span.plate-location{flex:1 1 240px;min-width:0;max-width:100%;font-size:16px;line-height:1.55;font-weight:600;letter-spacing:0;text-align:right;color:#c4d1b5}
+.plate-location .region-code{white-space:nowrap;font-size:inherit;color:#a4b891}
+@media(max-width:760px){
+ .spin-stage .plate-meta .rarity{font-size:16px}
+ .spin-stage .plate-meta>span.plate-location{font-size:16px;flex-basis:100%;text-align:left}
+}
