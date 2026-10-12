@@ -321,6 +321,34 @@ body{font-size:16px;line-height:1.5}
 .spin-stage .plate-meta .rarity i{width:5px;height:5px}
 .spin-stage .plate-meta>span.plate-location{flex:1 1 240px;min-width:0;max-width:100%;font-size:16px;line-height:1.55;font-weight:600;letter-spacing:0;text-align:right;color:#c4d1b5}
 .plate-location .region-code{white-space:nowrap;font-size:inherit;color:#a4b891}
+.plate-caption{flex-wrap:wrap}
+.result-actions{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.quick-sell-button,.result-garage-button,.result-sold{display:flex;align-items:center;justify-content:center;gap:12px;min-height:64px;padding:12px 16px;border:1px solid #758b44;border-radius:10px;font:700 16px/1.4 var(--font);color:var(--lime);background:#2a351e;transition:background .2s,transform .2s}
+.quick-sell-button:hover{background:#354526;transform:translateY(-1px)}
+.quick-sell-button>span{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px}
+.quick-sell-button strong{color:#f0f6dc;font-variant-numeric:tabular-nums}
+.quick-sell-button:disabled{opacity:.55;transform:none;cursor:not-allowed}
+.quick-sell-button .icon,.result-garage-button .icon,.result-sold .icon{width:19px;height:19px;flex-shrink:0}
+.result-garage-button{background:transparent;border-color:#465039;color:#c4d1b5;font-weight:600}
+.result-garage-button:hover{background:#ffffff08}
+.result-sold{border-color:#38452b;background:#20291b;color:#a8c987}
+.series-search{margin:22px 0 12px;min-width:0}
+.series-search input{width:100%;min-width:0}
+.series-list{max-height:360px;overflow-y:auto;overscroll-behavior:contain;border-top:1px solid var(--line)}
+.series-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 4px;border-bottom:1px solid var(--line)}
+.series-row>span{min-width:0}
+.series-row strong{font-size:18px;letter-spacing:1px}
+.series-row small{display:block;font-size:14px;color:#a5af98;margin-top:4px}
+.series-row>b{font-size:15px;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+.series-sources{color:var(--muted);font-size:14px}
+.series-sources a{color:var(--lime);text-decoration:underline;text-underline-offset:3px}
+@media(max-width:760px){
+ .result-actions{grid-template-columns:minmax(0,1fr);gap:9px}
+ .quick-sell-button{min-height:58px}
+ .result-garage-button,.result-sold{min-height:48px;font-size:15px}
+ .series-row{gap:10px}
+ .series-row>b{font-size:14px;max-width:46%;flex-shrink:1}
+}
 @media(max-width:760px){
  .spin-stage .plate-meta .rarity{font-size:16px}
  .spin-stage .plate-meta>span.plate-location{font-size:16px;flex-basis:100%;text-align:left}
