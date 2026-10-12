@@ -1,3 +1,4 @@
+import {ReelAudio} from './audio.mjs?v=20261013-7';
 import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261013-5';
 
 const icons={
@@ -32,7 +33,8 @@ const $=(selector)=>document.querySelector(selector);
 const money=(n)=>Math.round(n).toLocaleString('ru-RU');
 const esc=(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let storage;try{storage=localStorage;}catch{storage={getItem:()=>null,setItem:()=>{throw new Error('storage');}};}
-let state=loadState(storage), page='roll',selectedCase='standard',spinning=false,result=null,search='',filter='all',sort='new',audioContext,saveWarning=false;
+let state=loadState(storage), page='roll',selectedCase='standard',spinning=false,result=null,search='',filter='all',sort='new',saveWarning=false;
+const reelAudio=new ReelAudio(()=>state.sound);
 const demoPlate={letters:['А','А','А'],digits:'777',region:'777',rarity:'legendary',value:2450000,tags:['Три одинаковые буквы','Три одинаковые цифры']};
 const routes=[{id:'roll',label:'Выбить номер',short:'Выбить',icon:'spark'},{id:'garage',label:'Мой гараж',short:'Гараж',icon:'grid'},{id:'market',label:'Авторынок',short:'Рынок',icon:'bag'},{id:'achievements',label:'Достижения',short:'Награды',icon:'trophy'}];
 
@@ -108,10 +110,11 @@ function animateReels(root){
  const seq=Array.from({length:count},()=>chars[Math.floor(Math.random()*chars.length)]);seq.push(final);
  const track=slot.querySelector('.reel-track');track.innerHTML=seq.map(c=>`<span>${c}</span>`).join('');const h=slot.getBoundingClientRect().height;
  const anim=track.animate([{transform:'translateY(0)'},{transform:`translateY(-${count*h}px)`}],{duration:1250+i*130,easing:'cubic-bezier(.12,.65,.12,1)',fill:'forwards'});
- return anim.finished.then(()=>{track.innerHTML=`<span>${final}</span>`;anim.cancel();playTone(300+i*45,.025);});
+ const stopSound=reelAudio.watch(anim,count,i);
+ return anim.finished.then(()=>{stopSound(true);track.innerHTML=`<span>${final}</span>`;anim.cancel();},()=>{stopSound(false);track.innerHTML=`<span>${final}</span>`;});
  });return Promise.all(animations);
 }
-function playTone(freq,duration){if(!state.sound)return;try{audioContext??=new(window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();const o=audioContext.createOscillator(),g=audioContext.createGain();o.connect(g);g.connect(audioContext.destination);o.type='sine';o.frequency.value=freq;g.gain.setValueAtTime(.04,audioContext.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+duration);o.start();o.stop(audioContext.currentTime+duration);}catch{}}
+function playTone(freq,duration){reelAudio.tone(freq,duration);}
 function celebrate(legend=false){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const root=$('#confetti');for(let i=0;i<42;i++){const el=document.createElement('i');el.style.cssText=`--x:${Math.random()*100}vw;--d:${Math.random()*.8}s;--r:${Math.random()*720}deg;background:${legend?['#e7c76f','#fff2c8','#c5a149'][i%3]:['#d7f86b','#c2a2f6','#f1f2e8'][i%3]}`;root.append(el);setTimeout(()=>el.remove(),3800);}}
 
 function openModal(html){$('#modal-content').innerHTML=`<button class="modal-close icon-button" id="modal-close" aria-label="Закрыть">${icon('close')}</button>${html}`;if(!$('#modal').open)$('#modal').showModal();$('#modal-close').addEventListener('click',closeModal);}
@@ -134,7 +137,7 @@ function claim(id){if(spinning)return;const res=claimAchievement(state,id);if(re
 document.addEventListener('click',e=>{const quick=e.target.closest('[data-quick-sell]');if(quick){quickSell(quick.dataset.quickSell);return;}const favorite=e.target.closest('[data-favorite]');if(favorite){if(spinning)return;const p=state.collection.find(p=>p.id===favorite.dataset.favorite);if(p){p.favorite=!p.favorite;save();if(page==='garage')updateCards();else render();toast(p.favorite?'Номер в избранном и защищён от продажи':'Номер убран из избранного');}}const sale=e.target.closest('[data-sell]');if(sale)requestSell(sale.dataset.sell);const purchase=e.target.closest('[data-buy]');if(purchase)requestBuy(purchase.dataset.buy);const reward=e.target.closest('[data-claim]');if(reward)claim(reward.dataset.claim);});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal();});
 $('#help-button').addEventListener('click',showHelp);$('#footer-help').addEventListener('click',showHelp);$('#profile-button').addEventListener('click',showProfile);$('#wallet-bonus').addEventListener('click',daily);$('#mission-claim').addEventListener('click',()=>claim('five'));
-$('#sound-button').addEventListener('click',()=>{state.sound=!state.sound;save();if(state.sound)playTone(500,.1);});
+$('#sound-button').addEventListener('click',()=>{state.sound=!state.sound;reelAudio.setEnabled(state.sound);save();if(state.sound)playTone(500,.1);});
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&page==='roll'&&!spinning&&!$('#modal').open&&['BODY','MAIN'].includes(document.activeElement.tagName)){e.preventDefault();spin();}});
 window.addEventListener('hashchange',()=>{const next=location.hash.slice(1);if(spinning){history.replaceState(null,'',`#${page}`);toast('Ещё мгновение — номер останавливается','error');return;}page=routes.some(r=>r.id===next)?next:'roll';search='';filter='all';sort='new';render();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});});
 document.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));$('#year').textContent=new Date().getFullYear();page=routes.some(r=>r.id===location.hash.slice(1))?location.hash.slice(1):'roll';render();
