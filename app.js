@@ -1,3 +1,4 @@
+import {encodeSave,decodeSave,previousSave,replaceSave} from './transfer.mjs?v=20261014-1';
 import {ReelAudio} from './audio.mjs?v=20261013-7';
 import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261013-9';
 
@@ -28,6 +29,8 @@ const icons={
   chart:'<path d="M3 3v18h18M7 15l5-6 4 3 5-7"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
   car:'<path d="m5 10 2-6h10l2 6M3 17v-5l2-2h14l2 2v5H3Zm1 0v3m16-3v3M7 13h.01M17 13h.01"/>',
+  transfer:'<path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/>',
+  copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/>'
 };
 const icon=(name,cls='')=>`<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.spark}</svg>`;
@@ -128,8 +131,57 @@ function showSeries(){
  const draw=()=>{const term=$('#series-search').value.trim().toUpperCase(),rules=SERIES_RULES.filter(r=>!term||r.code.includes(term)||r.regions.some(c=>c.includes(term)));$('#series-list').innerHTML=rules.length?rules.map(r=>`<div class="series-row"><span><strong>${r.code}</strong><small>Регион ${r.regions.join(', ')}</small></span><b>от ${money(r.minimum)} ₽</b></div>`).join(''):'<p>Такого сочетания в справочнике пока нет.</p>';};
  $('#series-search').addEventListener('input',draw);draw();
 }
-function showHelp(){openModal(`<div class="modal-symbol">${icon('key')}</div><div class="eyebrow">ДОБРО ПОЖАЛОВАТЬ В КЛУБ</div><h2>Твоя коллекция удачи.</h2><div class="help-steps"><div><b>01</b><span><strong>Выбивай номера</strong><p>Выбери режим и нажми «Выбить номер». Буквы, цифры и регион прокрутятся и остановятся на твоём сочетании.</p></span></div><div><b>02</b><span><strong>Собирай и продавай</strong><p>Каждая находка попадает в гараж. Продавай по игровой оценке или добавляй в избранное, чтобы защитить от продажи.</p></span></div><div><b>03</b><span><strong>Возвращайся за новым</strong><p>Ежедневно забирай 25 000 ₽ и выполняй достижения. На старте у тебя 150 000 ₽ и три подарочных номера.</p></span></div></div><p class="modal-note">Это бесплатная игра с виртуальной валютой. Номера не являются настоящими регистрационными знаками. Прогресс хранится только в этом браузере на этом устройстве. Очистка данных браузера удаляет коллекцию. Рынок — игровой магазин, без других игроков.</p><button class="spin-button modal-action" id="help-done">Погнали ${icon('arrow')}</button>`);$('#help-done').addEventListener('click',closeModal);}
-function showProfile(){openModal(`<div class="modal-symbol">${icon('car')}</div><div class="eyebrow">ТВОЙ ПУТЬ В КЛУБЕ</div><h2>Хороший вкус.<br>Красивая коллекция.</h2><div class="profile-stats"><div><span>Спинов</span><strong>${state.spins}</strong></div><div><span>В гараже</span><strong>${state.collection.length}</strong></div><div><span>Продано номеров</span><strong>${state.sold}</strong></div><div><span>Легенд выбито</span><strong>${state.legends}</strong></div></div><p class="modal-note">Прогресс автоматически сохраняется в этом браузере.</p><button class="outline-button modal-action" id="profile-achievements">Посмотреть достижения ${icon('arrow')}</button>`);$('#profile-achievements').addEventListener('click',()=>{closeModal();location.hash='achievements';});}
+function showHelp(){openModal(`<div class="modal-symbol">${icon('key')}</div><div class="eyebrow">ДОБРО ПОЖАЛОВАТЬ В КЛУБ</div><h2>Твоя коллекция удачи.</h2><div class="help-steps"><div><b>01</b><span><strong>Выбивай номера</strong><p>Выбери режим и нажми «Выбить номер». Буквы, цифры и регион прокрутятся и остановятся на твоём сочетании.</p></span></div><div><b>02</b><span><strong>Собирай и продавай</strong><p>Каждая находка попадает в гараж. Продавай по игровой оценке или добавляй в избранное, чтобы защитить от продажи.</p></span></div><div><b>03</b><span><strong>Возвращайся за новым</strong><p>Ежедневно забирай 25 000 ₽ и выполняй достижения. На старте у тебя 150 000 ₽ и три подарочных номера.</p></span></div></div><p class="modal-note">Это бесплатная игра с виртуальной валютой. Номера не являются настоящими регистрационными знаками. Прогресс хранится только в этом браузере на этом устройстве. Для переноса на другое устройство используй «Перенести прогресс» внизу сайта или в статистике. Очистка данных браузера удаляет коллекцию. Рынок — игровой магазин, без других игроков.</p><button class="spin-button modal-action" id="help-done">Погнали ${icon('arrow')}</button>`);$('#help-done').addEventListener('click',closeModal);}
+function showProfile(){openModal(`<div class="modal-symbol">${icon('car')}</div><div class="eyebrow">ТВОЙ ПУТЬ В КЛУБЕ</div><h2>Хороший вкус.<br>Красивая коллекция.</h2><div class="profile-stats"><div><span>Спинов</span><strong>${state.spins}</strong></div><div><span>В гараже</span><strong>${state.collection.length}</strong></div><div><span>Продано номеров</span><strong>${state.sold}</strong></div><div><span>Легенд выбито</span><strong>${state.legends}</strong></div></div><p class="modal-note">Прогресс автоматически сохраняется в этом браузере. Его можно перенести на другое устройство с помощью кода.</p><div class="profile-actions"><button class="spin-button" id="profile-transfer">${icon('transfer')} Перенести сохранение</button><button class="outline-button" id="profile-achievements">Посмотреть достижения ${icon('arrow')}</button></div>`);$('#profile-achievements').addEventListener('click',()=>{closeModal();location.hash='achievements';});$('#profile-transfer').addEventListener('click',()=>showTransfer());}
+
+function transferStatus(element,message,error=false){element.textContent=message;element.dataset.kind=error?'error':'success';}
+function transferSummary(saved,label){return `<div><span>${label}</span><strong>${money(saved.balance)} ₽</strong><small>${saved.collection.length} номеров · ${money(saved.spins)} спинов</small></div>`;}
+function showTransfer(initial=''){
+ openModal(`<div class="modal-symbol">${icon('transfer')}</div><div class="eyebrow">ПРОГРЕСС ВСЕГДА С ТОБОЙ</div><h2>Перенести сохранение.</h2><p>Скопируй код на этом устройстве и вставь его в игру на другом.</p><section class="transfer-section"><h3>Забрать сохранение</h3><p>${money(state.balance)} ₽ на балансе · ${state.collection.length} номеров в гараже</p><button class="spin-button transfer-copy" id="transfer-copy" disabled>${icon('copy')} Готовим код…</button><div id="transfer-export-manual" hidden><label for="transfer-export">Твой код сохранения</label><textarea id="transfer-export" class="transfer-input" rows="3" readonly spellcheck="false" aria-describedby="transfer-export-status"></textarea></div><p class="transfer-status" id="transfer-export-status" role="status"></p></section><form class="transfer-section" id="transfer-form"><h3>Загрузить сохранение</h3><label for="transfer-input">Код с другого устройства</label><textarea class="transfer-input" id="transfer-input" rows="4" placeholder="Вставь код NMR1… или старый текст из консоли" spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="transfer-import-status" maxlength="3000000"></textarea><p class="transfer-hint">После проверки ты увидишь, какой прогресс будет загружен. Балансы и коллекции не складываются.</p><p class="transfer-status" id="transfer-import-status" role="status"></p><button class="outline-button transfer-load" id="transfer-load" type="submit">${icon('transfer')} Проверить и загрузить</button></form>${previousSave(storage)?'<button class="text-button transfer-restore" id="transfer-restore">Вернуть сохранение до последнего переноса ↗</button>':''}`);
+ const form=$('#transfer-form'),input=$('#transfer-input'),status=$('#transfer-import-status');
+ const copy=$('#transfer-copy'),exportStatus=$('#transfer-export-status');let code='';
+ input.value=initial;
+ encodeSave(state).then(value=>{if(!copy.isConnected)return;code=value;copy.disabled=false;copy.innerHTML=`${icon('copy')} Скопировать код сохранения`;}).catch(error=>{if(!copy.isConnected)return;copy.innerHTML=`${icon('copy')} Код недоступен`;transferStatus(exportStatus,error.message,true);});
+ copy.addEventListener('click',async()=>{
+  if(!code)return;
+  try{
+   if(!navigator.clipboard?.writeText)throw new Error('clipboard');
+   await navigator.clipboard.writeText(code);
+   if(copy.isConnected)transferStatus(exportStatus,'Код скопирован. Сохрани его и вставь на другом устройстве.');
+  }catch{
+   if(!copy.isConnected)return;
+   $('#transfer-export-manual').hidden=false;const field=$('#transfer-export');field.value=code;field.focus();field.select();field.setSelectionRange(0,code.length);
+   transferStatus(exportStatus,'Автокопирование недоступно. Код выделен — скопируй его вручную.');
+  }
+ });
+ input.addEventListener('input',()=>{input.removeAttribute('aria-invalid');status.textContent='';});
+ const preview=async(text,restore=false)=>{
+  if(spinning){transferStatus(status,'Дождись окончания прокрутки номера.',true);return;}
+  const load=$('#transfer-load');load.disabled=true;transferStatus(status,'Читаем сохранение…');
+  try{
+   const incoming=await decodeSave(text);
+   if(!form.isConnected||!$('#modal').open)return;
+   confirmTransfer(incoming,input.value,restore);
+  }catch(error){if(form.isConnected){transferStatus(status,error.message,true);input.setAttribute('aria-invalid','true');}}
+  finally{if(load.isConnected)load.disabled=false;}
+ };
+ form.addEventListener('submit',event=>{event.preventDefault();preview(input.value);});
+ $('#transfer-restore')?.addEventListener('click',()=>preview(previousSave(storage)||'',true));
+}
+function confirmTransfer(incoming,original,restore=false){
+ openModal(`<div class="modal-symbol">${icon('transfer')}</div><div class="eyebrow">ПРОВЕРЬ ПЕРЕД ЗАГРУЗКОЙ</div><h2>${restore?'Вернуть прежний прогресс?':'Загрузить это сохранение?'}</h2><div class="transfer-comparison">${transferSummary(state,'Сейчас на устройстве')}${transferSummary(incoming,restore?'Будет восстановлено':'Будет загружено')}</div><p>Текущий прогресс будет заменён. Его резервную копию можно вернуть в окне переноса.</p><p class="transfer-status" id="transfer-confirm-status" role="status"></p><div class="modal-buttons"><button class="outline-button" id="transfer-cancel">Назад</button><button class="spin-button" id="transfer-confirm">${restore?'Вернуть сохранение':'Заменить и загрузить'} ${icon('arrow')}</button></div>`);
+ $('#transfer-cancel').addEventListener('click',()=>showTransfer(original));
+ $('#transfer-confirm').addEventListener('click',()=>{
+  const status=$('#transfer-confirm-status');
+  if(spinning){transferStatus(status,'Дождись окончания прокрутки номера.',true);return;}
+  try{replaceSave(storage,incoming,state);}
+  catch{transferStatus(status,'Браузер не разрешил сохранить данные. Освободи место или разреши хранение данных сайта. Текущий прогресс не изменён.',true);return;}
+  state=incoming;result=null;saveWarning=false;search='';filter='all';sort='new';$('#toasts').replaceChildren();$('#confetti').replaceChildren();reelAudio.setEnabled(state.sound);render();
+  openModal(`<div class="modal-symbol">${icon('check')}</div><div class="eyebrow">ВСЁ НА МЕСТЕ</div><h2>${restore?'Прогресс восстановлен.':'Сохранение перенесено.'}</h2><p>${money(state.balance)} ₽ на балансе и ${state.collection.length} номеров в гараже. Можно продолжать игру.</p><p class="modal-note">Прежний прогресс остался в резервной копии в окне переноса.</p><button class="spin-button modal-action" id="transfer-done">Вернуться в игру ${icon('arrow')}</button>`);
+  $('#transfer-done').addEventListener('click',closeModal);
+ });
+}
+
 function completeSale(id){if(spinning){toast('Дождись остановки номера','error');return;}const res=sell(state,id);if(res.error){toast(res.error,'error');return;}closeModal();save();render();toast(`Номер продан. +${money(res.plate.value)} ₽ на балансе`);return true;}
 function quickSell(id){if(completeSale(id))$('#spin-button')?.focus({preventScroll:true});}
 function requestSell(id){if(spinning){toast('Дождись остановки номера','error');return;}const p=state.collection.find(p=>p.id===id);if(!p){toast('Этот номер уже продан','error');return;}if(p.favorite){toast('Сначала убери номер из избранного','error');return;}openModal(`<div class="modal-symbol">${icon('tag')}</div><div class="eyebrow">ХОРОШАЯ СДЕЛКА</div><h2>Передать эстафету?</h2><div class="modal-plate">${plate(p)}</div><p>Номер покинет гараж, а на баланс поступит <b class="bright">${money(p.value)} игровых ₽</b>.</p><div class="modal-buttons"><button class="outline-button" id="cancel-sale">Оставить себе</button><button class="spin-button" id="confirm-sale">Продать ${icon('arrow')}</button></div>`);$('#cancel-sale').addEventListener('click',closeModal);$('#confirm-sale').addEventListener('click',()=>completeSale(id));}
@@ -138,7 +190,7 @@ function daily(){if(spinning){toast('Сначала дождись остано�
 function claim(id){if(spinning)return;const res=claimAchievement(state,id);if(res.error){toast(res.error,'error');return;}save();render();toast(`Достижение твоё! +${money(res.reward)} ₽`);playTone(770,.16);}
 document.addEventListener('click',e=>{const quick=e.target.closest('[data-quick-sell]');if(quick){quickSell(quick.dataset.quickSell);return;}const favorite=e.target.closest('[data-favorite]');if(favorite){if(spinning)return;const p=state.collection.find(p=>p.id===favorite.dataset.favorite);if(p){p.favorite=!p.favorite;save();if(page==='garage')updateCards();else render();toast(p.favorite?'Номер в избранном и защищён от продажи':'Номер убран из избранного');}}const sale=e.target.closest('[data-sell]');if(sale)requestSell(sale.dataset.sell);const purchase=e.target.closest('[data-buy]');if(purchase)requestBuy(purchase.dataset.buy);const reward=e.target.closest('[data-claim]');if(reward)claim(reward.dataset.claim);});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))closeModal();});
-$('#help-button').addEventListener('click',showHelp);$('#footer-help').addEventListener('click',showHelp);$('#profile-button').addEventListener('click',showProfile);$('#wallet-bonus').addEventListener('click',daily);$('#mission-claim').addEventListener('click',()=>claim('five'));
+$('#help-button').addEventListener('click',showHelp);$('#footer-help').addEventListener('click',showHelp);$('#footer-transfer').addEventListener('click',()=>showTransfer());$('#profile-button').addEventListener('click',showProfile);$('#wallet-bonus').addEventListener('click',daily);$('#mission-claim').addEventListener('click',()=>claim('five'));
 $('#sound-button').addEventListener('click',()=>{state.sound=!state.sound;reelAudio.setEnabled(state.sound);save();if(state.sound)playTone(500,.1);});
 $('#notifications-button').addEventListener('click',()=>{state.notifications=!state.notifications;$('#toasts').replaceChildren();save();if(state.notifications)toast('Уведомления включены');});
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&page==='roll'&&!spinning&&!$('#modal').open&&['BODY','MAIN'].includes(document.activeElement.tagName)){e.preventDefault();spin();}});

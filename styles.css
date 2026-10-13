@@ -368,3 +368,33 @@ body{font-size:16px;line-height:1.5}
  .notifications-button{width:26px;height:30px}
  .notifications-button .icon{width:17px;height:17px}
 }
+
+.profile-actions{display:grid;gap:12px;margin-top:24px}
+.profile-actions .spin-button{font-size:16px;padding:14px;gap:10px}
+.transfer-section{margin-top:24px;padding-top:24px;border-top:1px solid var(--line)}
+.transfer-section h3{margin:0 0 10px;font-size:19px;line-height:1.4}
+.transfer-section p,.modal .transfer-hint{margin:10px 0 16px;font-size:14px;line-height:1.7;color:#a5b796}
+.transfer-section label{display:block;margin:14px 0 10px;font-size:14px;font-weight:600;color:#c3d0b6}
+.transfer-copy,.transfer-load{width:100%;min-height:50px;font-size:15px;gap:10px}
+.transfer-copy:disabled,.transfer-load:disabled{opacity:.65;cursor:wait}
+.transfer-input{display:block;box-sizing:border-box;width:100%;min-height:112px;padding:14px 15px;border:1px solid #4a5e35;border-radius:10px;background:#11190d;color:var(--text);font:14px/1.65 var(--font);resize:vertical;overflow-wrap:anywhere}
+.transfer-input::placeholder{color:#87987a}
+.transfer-input:focus{outline:2px solid var(--lime);outline-offset:2px}
+.transfer-input[aria-invalid="true"]{border-color:#e7b66f}
+.modal .transfer-status{font-size:14px;line-height:1.7;color:var(--lime);margin:14px 0 0;overflow-wrap:anywhere}
+.modal .transfer-status:empty{display:none}
+.modal .transfer-status[data-kind="error"]{color:#f0c181}
+.transfer-restore{margin-top:24px;font-size:14px;line-height:1.6;text-align:left}
+.transfer-comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:24px 0}
+.transfer-comparison>div{display:flex;flex-direction:column;gap:9px;padding:16px;border:1px solid #405332;border-radius:12px;background:#202d18;min-width:0}
+.transfer-comparison>div:last-child{border-color:#859f50;background:#2a381e}
+.transfer-comparison span{font-size:13px;color:#a5b796;line-height:1.5}
+.transfer-comparison strong{font-size:22px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.transfer-comparison small{font-size:13px;line-height:1.6;color:#c3d0b6}
+@media(max-width:760px){
+ .transfer-input{font-size:16px}
+ .transfer-section h3{font-size:19px}
+ .transfer-copy,.transfer-load{font-size:15px}
+ .transfer-comparison{grid-template-columns:minmax(0,1fr)}
+ .transfer-comparison strong{font-size:23px}
+}
