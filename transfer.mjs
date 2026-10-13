@@ -1,4 +1,4 @@
-import {LETTERS,RARITIES,loadState,saveState} from './game.mjs?v=20261013-9';
+import {LETTERS,RARITIES,loadState,saveState} from './game.mjs?v=20261014-2';
 
 const PREFIX='NMR1.';
 const MAX_BYTES=2_000_000,MAX_CODE=3_000_000;

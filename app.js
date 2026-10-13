@@ -1,6 +1,6 @@
-import {encodeSave,decodeSave,previousSave,replaceSave} from './transfer.mjs?v=20261014-1';
+import {encodeSave,decodeSave,previousSave,replaceSave} from './transfer.mjs?v=20261014-2';
 import {ReelAudio} from './audio.mjs?v=20261013-7';
-import {LETTERS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261013-9';
+import {LETTERS,REGIONS,RARITIES,CASES,ACHIEVEMENTS,MARKET,SERIES_RULES,plateText,regionName,progress,roll,sell,buy,claimAchievement,claimDaily,localDay,loadState,saveState} from './game.mjs?v=20261014-2';
 
 const icons={
   spark:'<path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z"/>',
@@ -29,6 +29,7 @@ const icons={
   chart:'<path d="M3 3v18h18M7 15l5-6 4 3 5-7"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
   car:'<path d="m5 10 2-6h10l2 6M3 17v-5l2-2h14l2 2v5H3Zm1 0v3m16-3v3M7 13h.01M17 13h.01"/>',
+  pin:'<path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
   transfer:'<path d="M4 7h15m-4-4 4 4-4 4M20 17H5m4-4-4 4 4 4"/>',
   copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
   lock:'<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/>'
@@ -67,12 +68,16 @@ function render(){
  document.title=`${routes.find(r=>r.id===page).label} — Номерной`;updateHeader();bindPage();
  if(page==='garage'||page==='market')updateCards();
 }
+function regionControl(){
+ const any=state.selectedRegion==='random';
+ return `<button class="region-picker" id="region-picker" aria-haspopup="dialog"><span class="region-picker-icon">${icon('pin')}</span><span class="region-picker-text"><small>Регион следующего номера</small><strong>${any?'Случайный регион':esc(regionName(state.selectedRegion))}</strong></span><span class="region-picker-code">${any?`${REGIONS.length} кода`:state.selectedRegion}</span>${icon('arrow')}</button>`;
+}
 function rollView(){
  const box=CASES.find(c=>c.id===selectedCase),p=result||demoPlate;
  const recent=state.history.length?state.history.slice(0,3):state.collection.slice(0,3);
  return `${pageHead('УДАЧА НА ТВОЕЙ СТОРОНЕ','У каждого номера<br>есть <em>свой характер.</em>','Крути. Находи редкие сочетания. Собирай свою историю.',`<div class="session-badge">${icon('spark')}<span>ТВОЯ КОЛЛЕКЦИЯ УДАЧИ<b>Без доната. Только игра.</b></span></div>`)}
  <div class="play-layout"><section class="roll-area"><div class="case-selector" role="group" aria-label="Режим выбивания">${CASES.map((c,i)=>`<button data-case="${c.id}" class="case-option ${selectedCase===c.id?'selected':''}" aria-pressed="${selectedCase===c.id}">${icon(['dice','diamond','crown'][i])}<span><b>${c.name}</b><small><span>${money(c.cost)} ₽</span><span class="case-unit"> / спин</span></small></span>${selectedCase===c.id?'<i class="case-selected-dot"></i>':''}</button>`).join('')}</div>
- <div class="spin-stage ${result?`result-${p.rarity}`:''}"><div class="stage-top"><span><i></i> ${result?'ТВОЯ НОВАЯ НАХОДКА':'СЛЕДУЮЩИЙ МОЖЕТ БЫТЬ ТВОИМ'}</span><button class="odds-button" id="odds-button">Шансы ${icon('help')}</button></div><div class="stage-visual"><div class="stage-aura"></div><div class="stage-rings"></div>${result?`<div class="drop-price" id="drop-price" style="--rarity:${RARITIES[p.rarity].color}" aria-live="polite"><span>СТОИМОСТЬ НОМЕРА</span><strong>${money(p.value)} <small>₽</small></strong></div>`:''}<div class="plate-meta" id="plate-meta">${rarity(p)}${result?`<span class="plate-location">${regionName(p.region)} <span class="region-code">· ${p.region}</span></span>`:'<span>КРАСИВОЕ СОВПАДЕНИЕ</span>'}</div><div id="hero-plate">${plate(p,'hero-plate')}</div><div class="plate-caption" id="plate-caption">${result?p.tags.map(t=>`<span>${esc(t)}</span>`).join(''):'Три буквы. Три цифры. Миллион историй.'}</div></div><div class="stage-actions">${result?resultActions(p):''}<button id="spin-button" class="spin-button">${icon('dice')}<span>Выбить номер</span><span class="spin-cost">${money(box.cost)} ₽ ${icon('arrow')}</span></button><div class="spin-bottom"><button class="text-button" id="series-button">Спецсерии и оценка ${icon('help')}</button>${result?'':`<span class="keyboard-hint"><kbd>space</kbd> чтобы крутить</span>`}</div></div></div>
+ ${regionControl()}<div class="spin-stage ${result?`result-${p.rarity}`:''}"><div class="stage-top"><span><i></i> ${result?'ТВОЯ НОВАЯ НАХОДКА':'СЛЕДУЮЩИЙ МОЖЕТ БЫТЬ ТВОИМ'}</span><button class="odds-button" id="odds-button">Шансы ${icon('help')}</button></div><div class="stage-visual"><div class="stage-aura"></div><div class="stage-rings"></div>${result?`<div class="drop-price" id="drop-price" style="--rarity:${RARITIES[p.rarity].color}" aria-live="polite"><span>СТОИМОСТЬ НОМЕРА</span><strong>${money(p.value)} <small>₽</small></strong></div>`:''}<div class="plate-meta" id="plate-meta">${rarity(p)}${result?`<span class="plate-location">${regionName(p.region)} <span class="region-code">· ${p.region}</span></span>`:'<span>КРАСИВОЕ СОВПАДЕНИЕ</span>'}</div><div id="hero-plate">${plate(p,'hero-plate')}</div><div class="plate-caption" id="plate-caption">${result?p.tags.map(t=>`<span>${esc(t)}</span>`).join(''):'Три буквы. Три цифры. Миллион историй.'}</div></div><div class="stage-actions">${result?resultActions(p):''}<button id="spin-button" class="spin-button">${icon('dice')}<span>Выбить номер</span><span class="spin-cost">${money(box.cost)} ₽ ${icon('arrow')}</span></button><div class="spin-bottom"><button class="text-button" id="series-button">Спецсерии и оценка ${icon('help')}</button>${result?'':`<span class="keyboard-hint"><kbd>space</kbd> чтобы крутить</span>`}</div></div></div>
  <div class="stats-strip"><div>${icon('dice')}<span>Всего спинов<strong>${money(state.spins)}</strong></span></div><div>${icon('grid')}<span>В гараже<strong>${state.collection.length} <small>ном.</small></strong></span></div><div>${icon('chart')}<span>Продано на сумму<strong>${money(state.earned)} <small>₽</small></strong></span></div></div></section>
  <aside class="right-rail"><section class="record-card"><div class="rail-heading"><span>${icon('trophy')} ЛИЧНЫЙ РЕКОРД</span><span class="tiny-dot"></span></div><h3>${state.best?'Твой лучший<br>экземпляр.':'Большие находки<br>ещё впереди.'}</h3><div class="record-plate-wrap">${plate(state.best||demoPlate,'small-plate')}</div><div class="record-value"><span>${state.best?RARITIES[state.best.rarity].label:'Вдохновение дня'}</span><strong>${state.best?money(state.best.value)+' ₽':'А 777 АА · 777'}</strong></div><button class="rail-link" id="record-button">${state.best?'Посмотреть номер':'Что делает номер редким?'} ${icon('arrow')}</button></section>
  <section class="daily-card"><span class="daily-icon">${icon('gift')}</span><span class="eyebrow">МАЛЕНЬКАЯ ТРАДИЦИЯ</span><h3>Новый день.<br>Новая удача.</h3><p>Заходи каждый день<br>и забирай игровые ₽.</p><button id="daily-button" class="daily-button" ${state.lastDaily===localDay()?'disabled':''}>${state.lastDaily===localDay()?'Сегодня получено ✓':'+25 000 ₽ забрать'} ${icon(state.lastDaily===localDay()?'check':'arrow')}</button></section>
@@ -88,6 +93,7 @@ function updateCards(){let list=page==='garage'?[...state.collection]:MARKET.fil
 function bindPage(){
  document.querySelectorAll('[data-case]').forEach(b=>b.addEventListener('click',()=>{if(spinning)return;selectedCase=b.dataset.case;render();}));
  $('#spin-button')?.addEventListener('click',spin);
+ $('#region-picker')?.addEventListener('click',showRegions);
  $('#daily-button')?.addEventListener('click',daily);
  $('#record-button')?.addEventListener('click',()=>state.best?showPlate(state.best):showOdds());
  $('#odds-button')?.addEventListener('click',showOdds);
@@ -100,7 +106,7 @@ function bindPage(){
 async function spin(){
  if(spinning)return;const res=roll(state,selectedCase);if(res.error){toast(res.error,'error');return;}
  spinning=true;save();closeModal();const p=res.plate;const stage=$('.spin-stage');stage.classList.add('is-spinning');$('#spin-button').disabled=true;$('#spin-button').innerHTML=`${icon('dice','spinning-icon')}<span>Ловим удачу…</span><span class="spin-cost">${money(CASES.find(c=>c.id===selectedCase).cost)} ₽</span>`;
- document.querySelectorAll('[data-case],[data-quick-sell]').forEach(b=>b.disabled=true);if($('#drop-price'))$('#drop-price').innerHTML='<span>ИЩЕМ ТВОЁ СОЧЕТАНИЕ</span><strong>···</strong>';$('#plate-meta').innerHTML=`<span class="spinning-label">СОВПАДЕНИЯ НЕ СЛУЧАЙНЫ</span><span>КРУТИМ…</span>`;$('#plate-caption').textContent='У каждого символа — свой момент.';
+ document.querySelectorAll('[data-case],[data-quick-sell],#region-picker').forEach(b=>b.disabled=true);if($('#drop-price'))$('#drop-price').innerHTML='<span>ИЩЕМ ТВОЁ СОЧЕТАНИЕ</span><strong>···</strong>';$('#plate-meta').innerHTML=`<span class="spinning-label">СОВПАДЕНИЯ НЕ СЛУЧАЙНЫ</span><span>КРУТИМ…</span>`;$('#plate-caption').textContent='У каждого символа — свой момент.';
  $('#hero-plate').innerHTML=plate(p,'hero-plate');playTone(280,.08);
  await animateReels($('#hero-plate'));result=p;spinning=false;render();playTone(RARITIES[p.rarity].rank>=3?880:560,.22);
  if(RARITIES[p.rarity].rank>=3)celebrate(p.rarity==='legendary');
@@ -125,6 +131,26 @@ function celebrate(legend=false){if(matchMedia('(prefers-reduced-motion: reduce)
 function openModal(html){$('#modal-content').innerHTML=`<button class="modal-close icon-button" id="modal-close" aria-label="Закрыть">${icon('close')}</button>${html}`;if(!$('#modal').open)$('#modal').showModal();$('#modal-close').addEventListener('click',closeModal);}
 function closeModal(){$('#modal').close();}
 function showPlate(p){openModal(`<div class="modal-symbol">${icon('trophy')}</div><div class="eyebrow">ТВОЙ ЛИЧНЫЙ РЕКОРД</div><h2>Номер с историей.</h2><div class="modal-plate">${plate(p)}</div>${rarity(p)}<div class="modal-price">${money(p.value)} <span>₽</span></div><div class="modal-tags">${p.tags.map(t=>`<span>${esc(t)}</span>`).join('')}</div><p class="modal-note">Рекорд сохраняется, даже если номер продан.</p>`);}
+function showRegions(){
+ if(spinning)return;
+ const any=state.selectedRegion==='random';
+ openModal(`<div class="modal-symbol">${icon('pin')}</div><div class="eyebrow">ТВОЙ КОД НА НОМЕРЕ</div><h2>Выбери регион.</h2><p>Выбери код для следующих номеров или оставь случайный регион.</p><label class="region-search">${icon('search')}<input id="region-search" type="search" placeholder="Москва, Краснодар или 177" aria-label="Поиск региона по названию или коду" autocomplete="off"></label><button class="region-choice region-random" id="region-random" aria-pressed="${any}"><span class="region-code-badge">${icon('dice')}</span><span class="region-choice-name">Случайный регион<small>Все ${REGIONS.length} кода</small></span>${any?icon('check'):''}</button><p class="region-results" id="region-results" role="status"></p><div class="region-list" id="region-list" role="group" aria-label="Коды регионов"></div>`);
+ const input=$('#region-search'),list=$('#region-list');
+ const regions=REGIONS.map(code=>({code,name:regionName(code)})).sort((a,b)=>a.name.localeCompare(b.name,'ru')||Number(a.code)-Number(b.code));
+ const normalize=text=>text.toLocaleLowerCase('ru-RU').replace(/ё/g,'е').trim();
+ const draw=()=>{
+  const query=normalize(input.value),found=regions.filter(r=>normalize(r.name).includes(query)||r.code.includes(query));
+  $('#region-results').textContent=`Кодов найдено: ${found.length}`;
+  list.innerHTML=found.length?found.map(r=>`<button class="region-choice" data-region="${r.code}" aria-pressed="${state.selectedRegion===r.code}"><span class="region-code-badge">${r.code}</span><span class="region-choice-name">${esc(r.name)}</span>${state.selectedRegion===r.code?icon('check'):''}</button>`).join(''):'<p class="region-empty">Регион не найден. Попробуй другое название или код.</p>';
+ };
+ const choose=code=>{
+  if(spinning||(code!=='random'&&!REGIONS.includes(code)))return;
+  state.selectedRegion=code;save();closeModal();render();$('#region-picker')?.focus({preventScroll:true});
+ };
+ input.addEventListener('input',draw);
+ list.addEventListener('click',event=>{const choice=event.target.closest('[data-region]');if(choice)choose(choice.dataset.region);});
+ $('#region-random').addEventListener('click',()=>choose('random'));draw();
+}
 function showOdds(){const box=CASES.find(c=>c.id===selectedCase);openModal(`<div class="modal-symbol">${icon('dice')}</div><div class="eyebrow">ПОНЯТНЫЕ ПРАВИЛА</div><h2>Удача в цифрах.</h2><p>Режим «${box.name}» · ${money(box.cost)} игровых ₽ за спин. Каждый спин независим.</p><div class="odds-list">${Object.entries(RARITIES).map(([k,r],i)=>`<div>${rarity({rarity:k})}<span class="odds-bar"><i style="width:${box.weights[i]}%;background:${r.color}"></i></span><b>${box.weights[i].toLocaleString('ru-RU')}%</b></div>`).join('')}</div><div class="info-note">${icon('spark')}<span>Редкость определяет тип сочетания. Известная спецсерия и её регион дополнительно повышают оценку: даже обычные цифры в серии АМР могут стоить дорого.</span></div><button class="outline-button modal-action" id="odds-series">Спецсерии и цены ${icon('arrow')}</button>`);$('#odds-series').addEventListener('click',showSeries);}
 function showSeries(){
  openModal(`<div class="modal-symbol">${icon('crown')}</div><div class="eyebrow">БУКВЫ ТОЖЕ ИМЕЮТ ЗНАЧЕНИЕ</div><h2>Особая история номера.</h2><p>Оценка учитывает буквы, точный код региона и цифры. Например, АМР 97 — от 3 500 000 ₽, АМР 77 — от 850 000 ₽, АМР в других регионах — от 120 000 ₽. Красивые цифры увеличивают надбавку.</p><label class="search-box series-search">${icon('search')}<input id="series-search" type="search" placeholder="АМР, ЕКХ или код региона…" aria-label="Поиск спецсерии"></label><div class="series-list" id="series-list"></div><p class="modal-note">Цены — игровые. Справочник отражает известные исторические и коллекционные сочетания; он не определяет нынешнего владельца или ведомство. За пределами указанного региона популярные буквы получают меньшую коллекционную надбавку.</p><p class="series-sources">Источники: <a href="https://nomer.club/specserii" target="_blank" rel="noopener noreferrer">справочник серий</a>, <a href="https://www.rbcautonews.ru/news/698f1dff9a7947868af70d04" target="_blank" rel="noopener noreferrer">РБК Авто</a>.</p>`);

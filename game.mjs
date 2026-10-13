@@ -27,12 +27,12 @@ export const ACHIEVEMENTS = [
 ];
 export function random() {if (globalThis.crypto?.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;return Math.random();}
 const pick = (arr,rng) => arr[Math.floor(rng()*arr.length)];
-export function generatePlate(caseId='standard',rng=random) {
+export function generatePlate(caseId='standard',rng=random,regionCode='random') {
   const box=CASES.find(c=>c.id===caseId)||CASES[0];let threshold=rng()*100;let rarity='common';
   const keys=Object.keys(RARITIES);
   for(let i=0;i<keys.length;i++){threshold-=box.weights[i];if(threshold<0){rarity=keys[i];break;}}
   const letter=()=>pick(LETTERS,rng);const digit=()=>String(Math.floor(rng()*10));
-  let letters=[letter(),letter(),letter()];let digits;let tags=[];const region=pick(REGIONS,rng);
+  let letters=[letter(),letter(),letter()];let digits;let tags=[];const region=REGIONS.includes(regionCode)?regionCode:pick(REGIONS,rng);
   if(rarity==='common'){
     do {digits=String(1+Math.floor(rng()*999)).padStart(3,'0');} while(digits[0]===digits[2]||digits.endsWith('00')||['123','234','345','456','567','678','789'].includes(digits));
     if(letters[0]===letters[1]&&letters[1]===letters[2]) letters[2]=LETTERS[(LETTERS.indexOf(letters[2])+1)%LETTERS.length];
@@ -57,7 +57,7 @@ export function generatePlate(caseId='standard',rng=random) {
 export function makeId(){return globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 export function plateText(p){return `${p.letters[0]} ${p.digits} ${p.letters[1]}${p.letters[2]} ${p.region}`;}
 export function starterState(){
-  return {version:1,balance:150000,spins:0,sold:0,bought:0,epics:0,legends:0,earned:0,best:null,lastDaily:null,claimed:[],purchased:[],history:[],sound:false,notifications:true,
+  return {version:1,balance:150000,spins:0,sold:0,bought:0,epics:0,legends:0,earned:0,best:null,lastDaily:null,claimed:[],purchased:[],history:[],sound:false,notifications:true,selectedRegion:'random',
     collection:[
       {id:'starter-1',letters:['К','М','Р'],digits:'404',region:'77',rarity:'uncommon',value:4200,tags:['Зеркальный номер'],createdAt:1,favorite:false,source:'gift'},
       {id:'starter-2',letters:['А','В','К'],digits:'777',region:'24',rarity:'rare',value:28000,tags:['Три одинаковые цифры'],createdAt:2,favorite:false,source:'gift'},
@@ -79,7 +79,7 @@ export function roll(state,caseId,rng=random){
   const box=CASES.find(c=>c.id===caseId);if(!box)return {error:'Неизвестный режим'};
   if(state.collection.length>=300)return {error:'Гараж заполнен. Продай несколько номеров (лимит — 300).'};
   if(state.balance<box.cost)return {error:'Не хватает игровых ₽. Продай номер или забери ежедневную награду.'};
-  const p=generatePlate(caseId,rng);state.balance-=box.cost;state.spins++;state.collection.unshift(p);
+  const p=generatePlate(caseId,rng,state.selectedRegion);state.balance-=box.cost;state.spins++;state.collection.unshift(p);
   if(RARITIES[p.rarity].rank>=3)state.epics++;if(p.rarity==='legendary')state.legends++;
   if(!state.best||p.value>state.best.value)state.best={...p};
   state.history.unshift({...p});state.history=state.history.slice(0,20);return {plate:p};
@@ -96,6 +96,7 @@ export function loadState(storage){
   if(!raw)return starterState();
   const s={...starterState(),...raw};
   s.notifications=s.notifications!==false;
+  if(!REGIONS.includes(s.selectedRegion))s.selectedRegion='random';
   for(const k of ['spins','sold','bought','epics','legends','earned'])if(!Number.isFinite(s[k])||s[k]<0)s[k]=0;
   for(const k of ['claimed','purchased','history'])if(!Array.isArray(s[k]))s[k]=[];
   s.history=s.history.filter(validPlate).slice(0,20);
