@@ -11,9 +11,7 @@ export const RARITIES = {
   legendary: {label:'Легендарный',color:'#e7c76f',rank:4}
 };
 export const CASES = [
-  {id:'standard',name:'Стандарт',desc:'Удача любит смелых',cost:1000,weights:[68,21,8.5,2.3,0.2]},
-  {id:'premium',name:'Премиум',desc:'Больше редких сочетаний',cost:10000,weights:[25,42,25,7,1]},
-  {id:'legend',name:'Легенда',desc:'Каждый номер — с характером',cost:50000,weights:[0,10,50,32,8]}
+  {id:'standard',name:'Случайный номер',desc:'Каждый символ выпадает независимо',cost:1000}
 ];
 export const ACHIEVEMENTS = [
   {id:'first',title:'С первой передачи',desc:'Выбей свой первый номер',icon:'key',goal:1,metric:'spins',reward:2000},
@@ -27,32 +25,49 @@ export const ACHIEVEMENTS = [
 ];
 export function random() {if (globalThis.crypto?.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0]/4294967296;return Math.random();}
 const pick = (arr,rng) => arr[Math.floor(rng()*arr.length)];
-export function generatePlate(caseId='standard',rng=random,regionCode='random') {
-  const box=CASES.find(c=>c.id===caseId)||CASES[0];let threshold=rng()*100;let rarity='common';
-  const keys=Object.keys(RARITIES);
-  for(let i=0;i<keys.length;i++){threshold-=box.weights[i];if(threshold<0){rarity=keys[i];break;}}
-  const letter=()=>pick(LETTERS,rng);const digit=()=>String(Math.floor(rng()*10));
-  let letters=[letter(),letter(),letter()];let digits;let tags=[];const region=REGIONS.includes(regionCode)?regionCode:pick(REGIONS,rng);
-  if(rarity==='common'){
-    do {digits=String(1+Math.floor(rng()*999)).padStart(3,'0');} while(digits[0]===digits[2]||digits.endsWith('00')||['123','234','345','456','567','678','789'].includes(digits));
-    if(letters[0]===letters[1]&&letters[1]===letters[2]) letters[2]=LETTERS[(LETTERS.indexOf(letters[2])+1)%LETTERS.length];
-    tags=['Классическое сочетание'];
-  }else if(rarity==='uncommon'){
-    const first=String(1+Math.floor(rng()*9));const middle=String((Number(first)+1+Math.floor(rng()*8))%10);
-    if(rng()<.5){digits=first+middle+first;tags=['Зеркальный номер'];}else{digits=first+'00';tags=['Круглый номер'];}
-    if(letters.every(l=>l===letters[0])) letters[2]=LETTERS[(LETTERS.indexOf(letters[2])+1)%LETTERS.length];
-  }else if(rarity==='rare'){
-    digits=String(1+Math.floor(rng()*9)).repeat(3);tags=['Три одинаковые цифры'];
-    if(letters.every(l=>l===letters[0])) letters[2]=LETTERS[(LETTERS.indexOf(letters[2])+1)%LETTERS.length];
-  }else if(rarity==='epic'){
-    digits=pick(['007','001','100','500','700','900','010'],rng);letters=[letters[0],letters[0],letters[0]];tags=['Три одинаковые буквы',digits.endsWith('00')?'Круглый номер':'Особая серия'];
-  }else{
-    digits=pick(['111','555','777','888','999'],rng);letters=[letters[0],letters[0],letters[0]];tags=['Три одинаковые буквы','Три одинаковые цифры','Коллекционная серия'];
-  }
-  const ranges={common:[600,1800],uncommon:[2500,7000],rare:[14000,42000],epic:[100000,380000],legendary:[950000,4200000]};
-  const [min,max]=ranges[rarity];let value=Math.round((min+rng()*(max-min))/100)*100;
-  if(digits==='777'&&rarity==='legendary')value=Math.round(value*1.6/100)*100;
-  return appraisePlate({id:makeId(),letters,digits,region,rarity,value,tags,createdAt:Date.now(),favorite:false,source:'roll'});
+const SEQUENCES=['123','234','345','456','567','678','789','987','876','765','654','543','432','321'];
+const VALUE_RANGES={common:[600,1800],uncommon:[2500,7000],rare:[14000,42000],epic:[100000,380000],legendary:[950000,4200000]};
+
+// Only inspect a completed combination. No symbols are replaced or rerolled here.
+export function classifyPlate(plate){
+ const {letters,digits,region}=plate;
+ const sameLetters=letters.every(l=>l===letters[0]);
+ const sameDigits=digits[0]===digits[1]&&digits[1]===digits[2];
+ const low=/^00[1-9]$/.test(digits);
+ const mirror=!sameDigits&&digits[0]===digits[2];
+ const round=!sameDigits&&digits.endsWith('00');
+ const sequence=SEQUENCES.includes(digits);
+ const regionMatch=digits===String(region).padStart(3,'0');
+ const tags=[];
+ if(sameLetters)tags.push('Три одинаковые буквы');
+ if(sameDigits)tags.push('Три одинаковые цифры');
+ if(low)tags.push('Малый номер 001–009');
+ if(mirror)tags.push('Зеркальный номер');
+ if(round)tags.push('Круглый номер');
+ if(sequence)tags.push('Последовательность цифр');
+ if(regionMatch)tags.push('Цифры совпадают с регионом');
+ let rarity=sameLetters&&sameDigits?'legendary':sameLetters?'epic':sameDigits||low?'rare':mirror||round||sequence||regionMatch?'uncommon':'common';
+ // A known series can raise the rating after the full plate and region are known.
+ const seriesValue=appraisePlate({...plate,value:0,tags:[]}).value;
+ const seriesRarity=seriesValue>=950000?'legendary':seriesValue>=100000?'epic':seriesValue>=14000?'rare':seriesValue>=2500?'uncommon':'common';
+ if(RARITIES[seriesRarity].rank>RARITIES[rarity].rank)rarity=seriesRarity;
+ if(sameLetters&&sameDigits)tags.push('Коллекционное сочетание');
+ return {rarity,tags:tags.length?tags:['Классическое сочетание']};
+}
+
+export function generatePlate(caseId='standard',rng=random,regionCode='random'){
+ // Three independent letters and three independent digits, including leading zeros.
+ const letters=Array.from({length:3},()=>pick(LETTERS,rng));
+ const digits=Array.from({length:3},()=>String(Math.floor(rng()*10))).join('');
+ const region=REGIONS.includes(regionCode)?regionCode:pick(REGIONS,rng);
+ const combination={letters,digits,region};
+ const classification=classifyPlate(combination);
+ const [min,max]=VALUE_RANGES[classification.rarity];
+ // The same combination has the same new base valuation; existing prices stay intact.
+ const fingerprint=[...(letters.join('')+digits+region)].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,0);
+ let value=Math.round((min+(fingerprint/4294967295)*(max-min))/100)*100;
+ if(digits==='777'&&classification.rarity==='legendary')value=Math.round(value*1.6/100)*100;
+ return appraisePlate({id:makeId(),...combination,...classification,value,createdAt:Date.now(),favorite:false,source:'roll'});
 }
 export function makeId(){return globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;}
 export function plateText(p){return `${p.letters[0]} ${p.digits} ${p.letters[1]}${p.letters[2]} ${p.region}`;}
@@ -61,7 +76,7 @@ export function starterState(){
     collection:[
       {id:'starter-1',letters:['К','М','Р'],digits:'404',region:'77',rarity:'uncommon',value:4200,tags:['Зеркальный номер'],createdAt:1,favorite:false,source:'gift'},
       {id:'starter-2',letters:['А','В','К'],digits:'777',region:'24',rarity:'rare',value:28000,tags:['Три одинаковые цифры'],createdAt:2,favorite:false,source:'gift'},
-      {id:'starter-3',letters:['М','Т','Е'],digits:'815',region:'197',rarity:'common',value:1100,tags:['Классическое сочетание'],createdAt:3,favorite:false,source:'gift'}].map(appraisePlate),pricingVersion:PRICING_VERSION};
+      {id:'starter-3',letters:['М','Т','Е'],digits:'815',region:'197',rarity:'common',value:1100,tags:['Классическое сочетание'],createdAt:3,favorite:false,source:'gift'}].map(p=>appraisePlate({...p,...classifyPlate(p)})),pricingVersion:PRICING_VERSION};
 }
 export const MARKET = [
   {id:'market-1',letters:['А','А','А'],digits:'777',region:'777',rarity:'legendary',value:2450000,tags:['Три одинаковые буквы','Три одинаковые цифры','Коллекционная серия'],price:2790000},
@@ -73,7 +88,7 @@ export const MARKET = [
   {id:'market-7',letters:['С','С','С'],digits:'111',region:'97',rarity:'legendary',value:1290000,tags:['Три одинаковые буквы','Три одинаковые цифры','Коллекционная серия'],price:1490000},
   {id:'market-8',letters:['Т','О','Р'],digits:'700',region:'124',rarity:'uncommon',value:5000,tags:['Круглый номер'],price:6500},
   {id:'market-9',letters:['А','К','М'],digits:'369',region:'50',rarity:'common',value:1200,tags:['Классическое сочетание'],price:1500}
-].map(offer=>{const p=appraisePlate(offer);return {...p,price:Math.max(offer.price,Math.ceil(p.value*1.15/100)*100)};});
+].map(offer=>{const p=appraisePlate({...offer,...classifyPlate(offer)});return {...p,price:Math.max(offer.price,Math.ceil(p.value*1.15/100)*100)};});
 export function progress(state,achievement){return Math.min(achievement.goal,achievement.metric==='collection'?state.collection.length:Number(state[achievement.metric])||0);}
 export function roll(state,caseId,rng=random){
   const box=CASES.find(c=>c.id===caseId);if(!box)return {error:'Неизвестный режим'};
